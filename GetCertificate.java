@@ -1,5 +1,3 @@
-package kr.ac.hanyang.infosec.section315;
-
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
@@ -60,7 +58,6 @@ public class MainActivity extends AppCompatActivity {
 
             Signature[] signatures = packageInfo.signatures;
 
-
             byte[] cert = signatures[0].toByteArray();
 
             InputStream input = new ByteArrayInputStream(cert);
@@ -68,11 +65,10 @@ public class MainActivity extends AppCompatActivity {
             CertificateFactory cf = null;
             try {
                 cf = CertificateFactory.getInstance("X509");
-
-
             } catch (CertificateException e) {
                 e.printStackTrace();
             }
+            
             X509Certificate c = null;
             try {
                 c = (X509Certificate) cf.generateCertificate(input);
@@ -84,11 +80,9 @@ public class MainActivity extends AppCompatActivity {
             } catch (CertificateException e) {
                 e.printStackTrace();
             }
-
             try {
                 MessageDigest md = MessageDigest.getInstance("SHA1");
                 byte[] publicKey = md.digest(c.getPublicKey().getEncoded());
-
 
                 StringBuffer hexString = new StringBuffer();
                 for (int i = 0; i < publicKey.length; i++) {
@@ -96,10 +90,7 @@ public class MainActivity extends AppCompatActivity {
                     if (appendString.length() == 1) hexString.append("0");
                     hexString.append(appendString);
                 }
-
-
                 Log.d("Example", "Cer: " + hexString.toString());
-
             } catch (NoSuchAlgorithmException e1) {
                 e1.printStackTrace();
             }
