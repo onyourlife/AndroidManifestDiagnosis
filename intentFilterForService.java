@@ -5,24 +5,24 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        PackageManager manager = getPackageManager();
-        Intent intent = new Intent();
-        intent.setAction(Intent.ACTION_MAIN);
-        intent.addCategory(Intent.CATEGORY_LAUNCHER);
-        // NOTE: Provide some data to help the Intent resolver
-        // Query for all activities that match my filter and request that the filter used
-        //  to match is returned in the ResolveInfo
-        List<ResolveInfo> infos = manager.queryIntentActivities (intent,
-                PackageManager.GET_RESOLVED_FILTER);
-        for (ResolveInfo info : infos) {
-            ActivityInfo activityInfo = info.activityInfo;
-            IntentFilter filter = info.filter;
-            if (filter != null && (filter.hasAction(Intent.ACTION_MAIN) ||
-                    filter.hasCategory(Intent.CATEGORY_LAUNCHER))) {
-                // This activity resolves my Intent with the filter I'm looking for
-                String activityPackageName = activityInfo.packageName;
-                String activityName = activityInfo.name;
+        PackageManager pm = getPackageManager();
+        List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
 
-                Log.e("TEST","Activity "+activityPackageName + "/" + activityName);
+        for (ApplicationInfo appInfo : packages) {
+            try {
+                PackageInfo packageInfo = getPackageManager().getPackageInfo(appInfo.packageName, PackageManager.GET_SERVICES | PackageManager.GET_META_DATA);
+                for (ServiceInfo serviceInfo : packageInfo.services) {
+                    Bundle metaData = serviceInfo.metaData;
+                    if (metaData != null) {
+//                        boolean exported = serviceInfo.exported;
+                        Log.e("Service: ", serviceInfo.packageName + " / " + serviceInfo.exported + " / " + serviceInfo.name);
+                    }
+                }
+            } catch (PackageManager.NameNotFoundException e) {
+                e.printStackTrace();
+            } catch (NullPointerException e) {
+//                e.printStackTrace();
             }
         }
+    }
+}
