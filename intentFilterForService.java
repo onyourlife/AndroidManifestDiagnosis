@@ -13,15 +13,14 @@ public class MainActivity extends AppCompatActivity {
                 PackageInfo packageInfo = getPackageManager().getPackageInfo(appInfo.packageName, PackageManager.GET_SERVICES | PackageManager.GET_META_DATA);
                 for (ServiceInfo serviceInfo : packageInfo.services) {
                     Bundle metaData = serviceInfo.metaData;
-                    if (metaData != null) {
-//                        boolean exported = serviceInfo.exported;
-                        Log.e("Service: ", serviceInfo.packageName + " / " + serviceInfo.exported + " / " + serviceInfo.name);
+                    if (metaData != null) {                    
+                        Log.e("Service: ", serviceInfo.packageName + " / " + serviceInfo.exported + " / " + serviceInfo.name + " / " + serviceInfo.permission);
                     }
                 }
             } catch (PackageManager.NameNotFoundException e) {
                 e.printStackTrace();
             } catch (NullPointerException e) {
-//                e.printStackTrace();
+               // e.printStackTrace();
             }
         }
     }
