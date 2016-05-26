@@ -89,48 +89,33 @@ public class MainActivity extends Activity {
 
             // permission 추가
             permissions = dm.getPermission(pm, appInfo);
-            for (String permission : permissions) {
-                if (permission != null) {
-                    appPermission = permission.split(",");
-                    if (appInfo.packageName.equals(appPermission[0])) {
-//                        Log.e("appPermission[1]", appPermission[1]);
-                        childList.add(appPermission[1]);
-                    }
-                }
-            }
+            loadChild(appInfo, permissions);
 
             // Service 추가
             services = dm.getService(pm, appInfo);
-            for (String service : services) {
-                if (service != null) {
-                    appService = service.split(",");
-                    if (appInfo.packageName.equals(appService[0])) {
-//                    Log.e("appService[1]", appService[1]);
-                        childList.add(appService[1]);
-                    }
-                }
-            }
+            loadChild(appInfo, services);
 
             // Receiver 추가
             receivers = dm.getReceiver(pm, appInfo);
-            for (String receiver : receivers) {
-                if (receiver != null) {
-                    appReceiver = receiver.split(",");
-                    if (appInfo.packageName.equals(appReceiver[0])) {
-//                    Log.e("appService[1]", appService[1]);
-                        childList.add(appReceiver[1]);
-                    }
-                }
-            }
+            loadChild(appInfo, receivers);
+            
+            // Certificate 추가
+            certificates = dm.getCertificate(pm, appInfo);
+            loadChild(appInfo, certificates);
 
             packageCollection.put(appInfo.packageName, childList);
         }
     }
 
-    private void loadChild(String[] laptopModels) {
-        childList = new ArrayList<String>();
-        for (String model : laptopModels)
-            childList.add(model);
+    private void loadChild(ApplicationInfo appInfo, ArrayList<String> componentInfo) {
+        String[] appComponent = null;
+        for (String component : componentInfo) {
+            if (component != null) {
+                appComponent = component.split(",");
+                if (appInfo.packageName.equals(appComponent[0])) {
+                    childList.add(appComponent[1]);
+                }
+            }
+        }
     }
-
 }
