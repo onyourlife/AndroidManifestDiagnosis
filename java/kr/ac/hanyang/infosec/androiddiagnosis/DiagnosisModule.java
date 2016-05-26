@@ -90,11 +90,14 @@ public class DiagnosisModule {
                                     break;
                             }
                         }
-//                        Log.d("Permission", appInfo.packageName + " / " + requestedPermission + " / " + protectionLevel);
-                        tmpPermissions.add(appInfo.packageName + ",<permission>\n" + requestedPermission + "\n\n<protectionLevel>\n" + protectionLevel);
-                    } else {
+
+                        if ((protectionLevel == null) || (protectionLevel == "")) {
+                            tmpPermissions.add(appInfo.packageName + ",<permission>\n" + requestedPermission);
 //                        Log.d("Permission", appInfo.packageName + " / " + requestedPermission);
-                        tmpPermissions.add(appInfo.packageName + ",<permission>\n" + requestedPermission);
+                        } else {
+                            tmpPermissions.add(appInfo.packageName + ",<permission>\n" + requestedPermission + "\n\n<protectionLevel>\n" + protectionLevel);
+//                        Log.d("Permission", appInfo.packageName + " / " + requestedPermission + " / " + protectionLevel);
+                        }
                     }
                 }
             }
@@ -106,8 +109,8 @@ public class DiagnosisModule {
         return tmpPermissions;
     }
 
-
-    public void getCertificate(PackageManager pm, ApplicationInfo appInfo) {
+    public ArrayList<String> getCertificate(PackageManager pm, ApplicationInfo appInfo) {
+        ArrayList<String> tmpCertificate = new ArrayList<String>();
         PackageInfo packageInfo = null;
         CertificateFactory cf = null;
         X509Certificate c = null;
@@ -127,12 +130,6 @@ public class DiagnosisModule {
             cf = CertificateFactory.getInstance("X509");
             c = (X509Certificate) cf.generateCertificate(input);
 
-//            Log.i("IssuerDN", appInfo.packageName + " / " + c.getIssuerDN().getName());
-            Log.i("IssuerX500Principal", appInfo.packageName + " / " + c.getIssuerX500Principal().getName());
-//            Log.i("SubjectDN", appInfo.packageName + " / " + c.getSubjectDN().getName());
-//            Log.i("Signature", appInfo.packageName + " / " + c.getSignature().toString());
-            Log.e("SerialNumber", appInfo.packageName + " / " + c.getSerialNumber().toString());
-
             MessageDigest md = MessageDigest.getInstance("SHA1");
             byte[] publicKey = md.digest(c.getPublicKey().getEncoded());
 
@@ -142,14 +139,23 @@ public class DiagnosisModule {
                 if (appendString.length() == 1) hexString.append("0");
                 hexString.append(appendString);
             }
-            Log.i("Cer", appInfo.packageName + " / " + hexString.toString());
 
+//            Log.i("IssuerDN", appInfo.packageName + " / " + c.getIssuerDN().getName());
+//            Log.i("IssuerX500Principal", appInfo.packageName + " / " + c.getIssuerX500Principal().getName());
+//            Log.i("SubjectDN", appInfo.packageName + " / " + c.getSubjectDN().getName());
+//            Log.i("Signature", appInfo.packageName + " / " + c.getSignature().toString());
+//            Log.e("SerialNumber", appInfo.packageName + " / " + c.getSerialNumber().toString());
+//            Log.i("Cer", appInfo.packageName + " / " + hexString.toString());
 
+            tmpCertificate.add(appInfo.packageName + ",<X.509>\n" + c.getIssuerX500Principal().getName());
+            tmpCertificate.add(appInfo.packageName + ",<SerialNumber>\n" + c.getSerialNumber().toString());
+            tmpCertificate.add(appInfo.packageName + ",<Signature>\n" + c.getSignature().hashCode());
         } catch (CertificateException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
+        return tmpCertificate;
     }
 
     public boolean checkRooting() {
