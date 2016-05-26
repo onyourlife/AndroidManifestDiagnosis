@@ -1,7 +1,6 @@
 package kr.ac.hanyang.infosec.androiddiagnosis;
 
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
@@ -10,7 +9,6 @@ import android.content.pm.PermissionInfo;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
 import android.content.pm.Signature;
-import android.os.Bundle;
 import android.util.Log;
 
 import java.io.ByteArrayInputStream;
@@ -21,21 +19,21 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DiagnosisModule {
 
-    private String result;
     private Process p;
     private boolean rooting = false;
 
-    public String getService(PackageManager pm, ApplicationInfo appInfo) {
+    public ArrayList<String> getService(PackageManager pm, ApplicationInfo appInfo) {
+        ArrayList<String> tmpServices = new ArrayList<String>();
         try {
             PackageInfo packageInfo = pm.getPackageInfo(appInfo.packageName, PackageManager.GET_SERVICES | PackageManager.GET_META_DATA);
             for (ServiceInfo serviceInfo : packageInfo.services) {
-                result = null;
-                if (serviceInfo.isEnabled()) {
-                    result = serviceInfo.packageName + " / " + serviceInfo.exported + " / " + serviceInfo.name + " / " + serviceInfo.permission;
+                if (serviceInfo.isEnabled() && serviceInfo.exported) {
+                    tmpServices.add(appInfo.packageName + ",<service>\n" + serviceInfo.name + "\n\n<service-permission>\n" + serviceInfo.permission);
                 }
             }
         } catch (PackageManager.NameNotFoundException e) {
@@ -43,53 +41,11 @@ public class DiagnosisModule {
         } catch (NullPointerException e) {
             // e.printStackTrace();
         }
-        return result;
+        return tmpServices;
     }
 
-    public void getCertificate(PackageManager pm, ApplicationInfo packageApp) {
-        PackageInfo packageInfo = null;
-        CertificateFactory cf = null;
-        X509Certificate c = null;
-
-        try {
-            packageInfo = pm.getPackageInfo(packageApp.packageName, PackageManager.GET_SIGNATURES);
-            Log.e("PackageName : ", packageApp.packageName);
-        } catch (PackageManager.NameNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        Signature[] signatures = packageInfo.signatures;
-        byte[] cert = signatures[0].toByteArray();
-        InputStream input = new ByteArrayInputStream(cert);
-
-        try {
-            cf = CertificateFactory.getInstance("X509");
-            c = (X509Certificate) cf.generateCertificate(input);
-
-//            Log.i("IssuerDN", c.getIssuerDN().getName());
-            Log.i("IssuerX500Principal", c.getIssuerX500Principal().getName());
-//            Log.i("SubjectDN", c.getSubjectDN().getName());
-            Log.i("Signature", c.getSignature().toString());
-            Log.e("SerialNumber", c.getSerialNumber().toString());
-
-            MessageDigest md = MessageDigest.getInstance("SHA1");
-            byte[] publicKey = md.digest(c.getPublicKey().getEncoded());
-
-            StringBuffer hexString = new StringBuffer();
-            for (int i = 0; i < publicKey.length; i++) {
-                String appendString = Integer.toHexString(0xFF & publicKey[i]);
-                if (appendString.length() == 1) hexString.append("0");
-                hexString.append(appendString);
-            }
-            Log.i("Cer: ", hexString.toString());
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void getReceiver(PackageManager pm, ApplicationInfo appInfo) {
+    public ArrayList<String> getReceiver(PackageManager pm, ApplicationInfo appInfo) {
+        ArrayList<String> tmpReceivers = new ArrayList<String>();
 
         Intent intent = new Intent(Intent.ACTION_BOOT_COMPLETED);
         List<ResolveInfo> activities = pm.queryBroadcastReceivers(intent, 0);
@@ -97,12 +53,15 @@ public class DiagnosisModule {
         for (ResolveInfo resolveInfo : activities) {
             ActivityInfo activityInfo = resolveInfo.activityInfo;
             if ((activityInfo != null) && (resolveInfo.activityInfo.packageName.equals(appInfo.packageName))) {
-                Log.e("Receiver", resolveInfo.activityInfo.packageName + " / " + activityInfo.name);
+//                Log.e("Receiver", appInfo.packageName + " / " + resolveInfo.activityInfo.packageName + " / " + activityInfo.name);
+                tmpReceivers.add(appInfo.packageName + ",<receiver>\n" + activityInfo.name);
             }
         }
+        return tmpReceivers;
     }
 
-    public void getPermission(PackageManager pm, ApplicationInfo appInfo) {
+    public ArrayList<String> getPermission(PackageManager pm, ApplicationInfo appInfo) {
+        ArrayList<String> tmpPermissions = new ArrayList<String>();
         try {
             PackageInfo packageInfo = pm.getPackageInfo(appInfo.packageName, PackageManager.GET_PERMISSIONS | PackageManager.GET_SERVICES | PackageManager.GET_META_DATA);
 
@@ -131,15 +90,64 @@ public class DiagnosisModule {
                                     break;
                             }
                         }
-                        Log.d("Permission", appInfo.packageName + "," + requestedPermission + "," + protectionLevel);
+//                        Log.d("Permission", appInfo.packageName + " / " + requestedPermission + " / " + protectionLevel);
+                        tmpPermissions.add(appInfo.packageName + ",<permission>\n" + requestedPermission + "\n\n<protectionLevel>\n" + protectionLevel);
                     } else {
-                        Log.d("Permission", appInfo.packageName + "," + requestedPermission);
+//                        Log.d("Permission", appInfo.packageName + " / " + requestedPermission);
+                        tmpPermissions.add(appInfo.packageName + ",<permission>\n" + requestedPermission);
                     }
                 }
             }
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
         } catch (NullPointerException e) {
+            e.printStackTrace();
+        }
+        return tmpPermissions;
+    }
+
+
+    public void getCertificate(PackageManager pm, ApplicationInfo appInfo) {
+        PackageInfo packageInfo = null;
+        CertificateFactory cf = null;
+        X509Certificate c = null;
+
+        try {
+            packageInfo = pm.getPackageInfo(appInfo.packageName, PackageManager.GET_SIGNATURES);
+//            Log.e("PackageName", appInfo.packageName);
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        Signature[] signatures = packageInfo.signatures;
+        byte[] cert = signatures[0].toByteArray();
+        InputStream input = new ByteArrayInputStream(cert);
+
+        try {
+            cf = CertificateFactory.getInstance("X509");
+            c = (X509Certificate) cf.generateCertificate(input);
+
+//            Log.i("IssuerDN", appInfo.packageName + " / " + c.getIssuerDN().getName());
+            Log.i("IssuerX500Principal", appInfo.packageName + " / " + c.getIssuerX500Principal().getName());
+//            Log.i("SubjectDN", appInfo.packageName + " / " + c.getSubjectDN().getName());
+//            Log.i("Signature", appInfo.packageName + " / " + c.getSignature().toString());
+            Log.e("SerialNumber", appInfo.packageName + " / " + c.getSerialNumber().toString());
+
+            MessageDigest md = MessageDigest.getInstance("SHA1");
+            byte[] publicKey = md.digest(c.getPublicKey().getEncoded());
+
+            StringBuffer hexString = new StringBuffer();
+            for (int i = 0; i < publicKey.length; i++) {
+                String appendString = Integer.toHexString(0xFF & publicKey[i]);
+                if (appendString.length() == 1) hexString.append("0");
+                hexString.append(appendString);
+            }
+            Log.i("Cer", appInfo.packageName + " / " + hexString.toString());
+
+
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
     }
